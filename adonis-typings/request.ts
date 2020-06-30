@@ -547,6 +547,7 @@ declare module '@ioc:Adonis/Core/Request' {
     allowMethodSpoofing: boolean,
     getIp?: ((request: RequestContract) => string),
     trustProxy: (address: string, distance: number) => boolean,
+    enableAsyncHttpContext?: boolean,
   }
 
   /**

@@ -122,8 +122,10 @@ export class Server implements ServerContract {
   }
 
   private getAsyncContext (ctx: HttpContextContract): InternalAsyncHttpContext | null {
-    // TODO: check if async context is activated, return null if not.
-    return new InternalAsyncHttpContext(ctx)
+    if (this.httpConfig.enableAsyncHttpContext) {
+      return new InternalAsyncHttpContext(ctx)
+    }
+    return null
   }
 
   /**

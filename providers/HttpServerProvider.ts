@@ -14,6 +14,7 @@ import { Request } from '../src/Request'
 import { Response } from '../src/Response'
 import { HttpContext } from '../src/HttpContext'
 import { MiddlewareStore } from '../src/MiddlewareStore'
+import { asyncHttpContext } from '../src/AsyncHttpContext'
 
 export default class HttpServerProvider {
   constructor (protected $container: IocContract) {}
@@ -65,6 +66,10 @@ export default class HttpServerProvider {
     })
   }
 
+  protected $registerAsyncContext () {
+    this.$container.bind('Adonis/Core/AsyncHttpContext', () => asyncHttpContext)
+  }
+
   /**
    * Registering all bindings
    */
@@ -74,5 +79,6 @@ export default class HttpServerProvider {
     this.$registerHttpServer()
     this.$registerHTTPContext()
     this.$registerRouter()
+    this.$registerAsyncContext()
   }
 }

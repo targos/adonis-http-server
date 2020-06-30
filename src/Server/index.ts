@@ -28,6 +28,7 @@ import { HttpContext } from '../HttpContext'
 import { RequestHandler } from './RequestHandler'
 import { MiddlewareStore } from '../MiddlewareStore'
 import { ExceptionManager } from './ExceptionManager'
+import { InternalAsyncHttpContext } from '../AsyncHttpContext'
 
 /**
  * Server class handles the HTTP requests by using all Adonis micro modules.
@@ -120,6 +121,11 @@ export class Server implements ServerContract {
     }), profilerRow)
   }
 
+  private getAsyncContext (ctx: HttpContextContract): InternalAsyncHttpContext | null {
+    // TODO: check if async context is activated, return null if not.
+    return new InternalAsyncHttpContext(ctx)
+  }
+
   /**
    * Define custom error handler to handler all errors
    * occurred during HTTP request
@@ -158,6 +164,19 @@ export class Server implements ServerContract {
     const requestAction = this.getProfilerRow(request)
     const ctx = this.getContext(request, response, requestAction)
 
+    const asyncContext = this.getAsyncContext(ctx)
+    if (asyncContext) {
+      await asyncContext.run(() => this.handleImpl(ctx, res, requestAction))
+    } else {
+      await this.handleImpl(ctx, res, requestAction)
+    }
+  }
+
+  private async handleImpl (
+    ctx: HttpContextContract,
+    res: ServerResponse,
+    requestAction: ProfilerRowContract
+  ): Promise<void> {
     /*
      * Handle request by executing hooks, request middleware stack
      * and route handler

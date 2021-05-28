@@ -27,6 +27,7 @@ import { HttpContext } from '../HttpContext'
 import { RequestHandler } from './RequestHandler'
 import { MiddlewareStore } from '../MiddlewareStore'
 import { ExceptionManager } from './ExceptionManager'
+import { InternalAsyncHttpContext } from '../AsyncHttpContext'
 
 /**
  * Server class handles the HTTP requests by using all Adonis micro modules.
@@ -124,6 +125,13 @@ export class Server implements ServerContract {
   }
 
   /**
+   * Returns a new async HTTP context for the new request
+   */
+  private getAsyncContext(ctx: HttpContextContract): InternalAsyncHttpContext {
+    return new InternalAsyncHttpContext(ctx)
+  }
+
+  /**
    * Define custom error handler to handler all errors
    * occurred during HTTP request
    */
@@ -160,34 +168,40 @@ export class Server implements ServerContract {
 
     const requestAction = this.getProfilerRow(request)
     const ctx = this.getContext(request, response, requestAction)
+    const asyncContext = this.getAsyncContext(ctx)
 
     /*
-     * Handle request by executing hooks, request middleware stack
-     * and route handler
+     * Run everything within the async HTTP context
      */
-    try {
-      await this.handleRequest(ctx)
-    } catch (error) {
-      await this.exception.handle(error, ctx)
-    }
+    return asyncContext.run(async () => {
+      /*
+       * Handle request by executing hooks, request middleware stack
+       * and route handler
+       */
+      try {
+        await this.handleRequest(ctx)
+      } catch (error) {
+        await this.exception.handle(error, ctx)
+      }
 
-    /*
-     * Excute hooks when there are one or more hooks. The `ctx.response.finish`
-     * is intentionally inside both the `try` and `catch` blocks as a defensive
-     * measure.
-     *
-     * When we call `response.finish`, it will serialize the response body and may
-     * encouter errors while doing so and hence will be catched by the catch
-     * block.
-     */
-    try {
-      await this.hooks.executeAfter(ctx)
-      requestAction.end({ status_code: res.statusCode })
-      ctx.response.finish()
-    } catch (error) {
-      await this.exception.handle(error, ctx)
-      requestAction.end({ status_code: res.statusCode, error })
-      ctx.response.finish()
-    }
+      /*
+       * Excute hooks when there are one or more hooks. The `ctx.response.finish`
+       * is intentionally inside both the `try` and `catch` blocks as a defensive
+       * measure.
+       *
+       * When we call `response.finish`, it will serialize the response body and may
+       * encouter errors while doing so and hence will be catched by the catch
+       * block.
+       */
+      try {
+        await this.hooks.executeAfter(ctx)
+        requestAction.end({ status_code: res.statusCode })
+        ctx.response.finish()
+      } catch (error) {
+        await this.exception.handle(error, ctx)
+        requestAction.end({ status_code: res.statusCode, error })
+        ctx.response.finish()
+      }
+    })
   }
 }

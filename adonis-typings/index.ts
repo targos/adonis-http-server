@@ -7,6 +7,7 @@
  * file that was distributed with this source code.
  */
 
+/// <reference path="./async-http-context.ts" />
 /// <reference path="./container.ts" />
 /// <reference path="./context.ts" />
 /// <reference path="./http-server.ts" />

@@ -10,6 +10,8 @@
 import { Exception } from '@poppinss/utils'
 import { ApplicationContract } from '@ioc:Adonis/Core/Application'
 
+import { asyncHttpContext } from '../src/AsyncHttpContext'
+
 export default class HttpServerProvider {
   constructor(protected application: ApplicationContract) {}
 
@@ -81,6 +83,13 @@ export default class HttpServerProvider {
   }
 
   /**
+   * Register the async HTTP context
+   */
+  protected registerAsyncHttpContext() {
+    this.application.container.singleton('Adonis/Core/AsyncHttpContext', () => asyncHttpContext)
+  }
+
+  /**
    * Register the router. The router points to the instance of router used
    * by the middleware
    */
@@ -98,6 +107,7 @@ export default class HttpServerProvider {
     this.registerMiddlewareStore()
     this.registerHttpServer()
     this.registerHTTPContext()
+    this.registerAsyncHttpContext()
     this.registerRouter()
   }
 }
